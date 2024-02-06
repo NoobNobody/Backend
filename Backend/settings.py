@@ -58,6 +58,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / "staticfiles"],  
+        # 'DIRS': ['C:/Users/Nobody/Documents/PracaInżynierska/Frontend/dist'],  
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -127,7 +128,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / "staticfiles",
+    # BASE_DIR / 'C:/Users/Nobody/Documents/PracaInżynierska/Frontend/dist'
+    # BASE_DIR / "staticfiles",
 ]
 
 
