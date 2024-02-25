@@ -10,6 +10,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from manual_provinces import manual_provinces
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -19,6 +22,25 @@ django.setup()
 
 from api.models import Websites, Categories, JobOffers
 
+geolocator = Nominatim(user_agent="my-application123")
+
+def get_province(city_name):
+
+    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
+
+    try:
+        location = geolocator.geocode(f"{city}, Polska")
+        if location:
+            display_name = location.raw.get('display_name', '')
+            match = re.search(r'województwo (\w+[-\w]*)', display_name)
+            if match:
+                return f"województwo {match.group(1)}"
+    except (GeocoderTimedOut, GeocoderUnavailable) as e:
+        print(f"Błąd geokodowania dla {city}: {e}")
+
+    return manual_provinces.get(city)
+
+        
 def transform_date(publication_date):
     months = {
         'stycznia': '01',
@@ -110,7 +132,9 @@ def scrapp(site_url, category_name, category_path):
                         location = lok.a.get_text(strip=True)
                         link = lok.a['href']
 
-                        print(f"Pozycja: {position},  Lokacja: {location},  Link: {link}")
+                        province = get_province(location)
+
+                        print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
                         existing_offer = JobOffers.objects.filter(
                             Position=position, 
@@ -122,6 +146,7 @@ def scrapp(site_url, category_name, category_path):
                             new_offer=JobOffers(
                                 Position=position,
                                 Location=location,
+                                Province=province,
                                 Firm=firm,
                                 Job_type=job_type,
                                 Job_model=job_model,
@@ -142,7 +167,9 @@ def scrapp(site_url, category_name, category_path):
                     location = location_element.get_text(strip=True) if location_element else None
                     link = offer.find('a', attrs={'data-test': 'link-offer'})['href'] if offer.find('a', attrs={'data-test': 'link-offer'}) else None
                     
-                    print(f"Pozycja: {position},  Lokacja: {location},  Link: {link}")
+                    province = get_province(location)
+
+                    print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
                     existing_offer = JobOffers.objects.filter(
                         Position=position, 
@@ -154,6 +181,7 @@ def scrapp(site_url, category_name, category_path):
                         new_offer=JobOffers(
                             Position=position,
                             Location=location,
+                            Province=province,
                             Firm=firm,
                             Job_type=job_type,
                             Job_model=job_model,

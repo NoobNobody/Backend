@@ -91,6 +91,8 @@ class SearchJobOffersByPosition(APIView):
 class FilteredJobOffers(APIView):
     def get(self, request, category_id, *args, **kwargs):
         paginator = StandardResultsSetPagination()
+        search_query = request.query_params.get('search', None)
+        offers_query = JobOffers.objects.filter(Category_id=category_id).select_related('Website', 'Category')
         employment_types = request.query_params.getlist('selectedJobTime')
         date_filter = request.query_params.get('selectedDate', None)
         job_model_filter = request.query_params.getlist('selectedJobModel')
@@ -98,10 +100,14 @@ class FilteredJobOffers(APIView):
         salary_type = request.query_params.get('selectedSalaryType')
         salary_range = request.query_params.get('selectedSalaryRange')
         
-        offers_query = JobOffers.objects.filter(Category_id=category_id).select_related('Website', 'Category')
         logger.debug(f"Received jobModels filter: {job_model_filter}")
         logger.debug(f"Received workingours filter: {employment_types}")
         logger.debug(f"Query params: {request.query_params}")
+        logger.debug(f"Search query: {search_query}")
+
+        if search_query:
+            offers_query = offers_query.filter(Q(Position__icontains=search_query))
+
         if date_filter:
             if date_filter == 'last24Hours':
                 offers_query = offers_query.filter(Date__gte=datetime.now() - timedelta(days=1))
@@ -182,7 +188,7 @@ class FilteredJobOffers(APIView):
                             offers.append(offer)
             offers_query = JobOffers.objects.filter(id__in=[offer.id for offer in offers])
 
-
+        logger.debug(f"Final query: {str(offers_query.query)}")
         offers_query = offers_query.order_by('-Date')
         result_page = paginator.paginate_queryset(offers_query, request, view=self)
         serializer = JobOffersSerializer(result_page, many=True)

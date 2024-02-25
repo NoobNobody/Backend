@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import django
 from selenium import webdriver
@@ -9,6 +10,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from manual_provinces import manual_provinces
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -17,6 +21,25 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Backend.settings")
 django.setup()
 
 from api.models import Websites, Categories, JobOffers
+
+geolocator = Nominatim(user_agent="my-application123")
+
+def get_province(city_name):
+
+    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
+
+    try:
+        location = geolocator.geocode(f"{city}, Polska")
+        if location:
+            display_name = location.raw.get('display_name', '')
+            match = re.search(r'województwo (\w+[-\w]*)', display_name)
+            if match:
+                return f"województwo {match.group(1)}"
+    except (GeocoderTimedOut, GeocoderUnavailable) as e:
+        print(f"Błąd geokodowania dla {city}: {e}")
+
+    return manual_provinces.get(city)
+
 
 def transform_date(publication_date):
     months = {
@@ -89,6 +112,8 @@ def scrapp(site_url, category_name, category_path):
                     elif 'umowa' in text.lower() or 'samozatrudnienie' in text.lower() or 'inny' in text.lower():
                             job_type = text
 
+            province = get_province(location)
+
             job_model_element = offer.find('span', string=lambda x: x and x.startswith('Miejsce pracy:'))
             job_model = job_model_element.get_text(strip=True).split(': ')[1] if job_model_element else None
 
@@ -98,7 +123,7 @@ def scrapp(site_url, category_name, category_path):
             link = offer.find('a')['href'] if offer.find('a') else None
             full_link = site_url + link if link else None
 
-            print(f"Pozycja: {position},  Lokacja: {location},  Link: {full_link}")
+            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
@@ -109,6 +134,7 @@ def scrapp(site_url, category_name, category_path):
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
+                    Province=province,
                     Job_type=job_type,
                     Job_model=job_model,
                     Working_hours=working_hours,
@@ -133,7 +159,7 @@ def scrapp(site_url, category_name, category_path):
 
 categories = {
     "Administracja biurowa": "administracja-biurowa",
-    # "Badania i rozwój": "badania-rozwoj",
+    "Badania i rozwój": "badania-rozwoj",
     "Budownictwo / Remonty / Geodezja": "budowa-remonty",
     "Dostawca, kurier miejski": "dostawca-kurier-miejski",
     "Internet / e-Commerce": "e-commerce-handel-internetowy",
