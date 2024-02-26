@@ -33,4 +33,3 @@ class JobOffers(models.Model):
     def __str__(self):
         return f"{self.Position} w {self.Website}"
     
-

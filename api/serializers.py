@@ -22,7 +22,7 @@ class JobOffersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobOffers
-        fields = ['Position', 'Firm', 'Website_info', 'Category_info', 'Category', 'Date', 'Location', 'Job_type', 'Working_hours', 'Job_model', 'Earnings', 'Link']
+        fields = ['Position', 'Firm', 'Website_info', 'Category_info', 'Category', 'Date', 'Location', 'Province', 'Job_type', 'Working_hours', 'Job_model', 'Earnings', 'Link']
 
     def get_Website_info(self, obj):
         website = obj.Website
