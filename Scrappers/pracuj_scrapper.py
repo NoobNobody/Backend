@@ -207,7 +207,7 @@ def scrapp(site_url, category_name, category_path):
     driver.quit()
 
 categories = {
-    "Administracja biurowa": "administracja%20biurowa;cc,5001",
+    # "Administracja biurowa": "administracja%20biurowa;cc,5001",
     "Badania i rozwój": "badania%20i%20rozwój;cc,5002",
     "Bankowość": "bankowość;cc,5003",
     "BHP / Ochrona środowiska": "bhp%20ochrona%20środowiska;cc,5004",
