@@ -10,10 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
-from manual_provinces import manual_provinces
-
+from helping_functions import get_province, get_location_details
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -23,32 +20,16 @@ django.setup()
 
 from api.models import Websites, Categories, JobOffers
 
-geolocator = Nominatim(user_agent="my-application123")
-
-def get_province(city_name):
-
-    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
-
-    try:
-        location = geolocator.geocode(f"{city}, Polska")
-        if location:
-            display_name = location.raw.get('display_name', '')
-            match = re.search(r'województwo (\w+[-\w]*)', display_name)
-            if match:
-                return f"województwo {match.group(1)}"
-    except (GeocoderTimedOut, GeocoderUnavailable) as e:
-        print(f"Błąd geokodowania dla {city}: {e}")
-
-    return manual_provinces.get(city)
-
 def transform_date(publication_date):
+    if not publication_date:
+        return None
     try:
         date_obj = datetime.strptime(publication_date, '%d/%m/%Y')
         return date_obj.strftime('%Y-%m-%d')
     except ValueError as e:
         print(f"Błąd podczas przekształcania daty: {e}")
         return None
-
+    
 def scrapp(site_url, category_name, category_path):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
@@ -80,18 +61,24 @@ def scrapp(site_url, category_name, category_path):
                 location = location_element.text.strip()
                 location = location.split(',')[0].strip()
 
+            location_details = get_location_details(location)
+            print(location_details)
+
             province = get_province(location)
 
             job_type_element = offer.select_one('.type')
             job_type = job_type_element.text.strip() if job_type_element else None
 
-            publication_date_element = offer.select_one('.date').text.strip() if job_type_element else None
+            publication_date_element = offer.select_one('.date').text.strip() if offer.select_one('.date') else None
+            if not publication_date_element:
+                print("Brak daty publikacji. Pomijanie oferty.")
+                continue
             publication_date = transform_date(publication_date_element)
 
             link = position_element['href'] if position_element else None
             full_link = site_url + link
 
-            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
+            print(f"Pozycja: {position},  Lokacja: {location}, Data: {publication_date}, Województwo: {province}, Link: {link}")
 
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
@@ -103,6 +90,8 @@ def scrapp(site_url, category_name, category_path):
                     Position=position,
                     Firm="Manpower",
                     Location=location,
+                    Location_Latitude=location_details['latitude'],
+                    Location_Longitude=location_details['longitude'],
                     Province=province,
                     Job_type=job_type,
                     Date=publication_date,

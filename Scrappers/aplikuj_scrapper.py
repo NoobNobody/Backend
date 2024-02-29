@@ -10,9 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
-from manual_provinces import manual_provinces
+from helping_functions import parse_earnings, get_province, get_location_details, is_leap_year
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -22,23 +20,6 @@ django.setup()
 
 from api.models import Websites, Categories, JobOffers
 
-geolocator = Nominatim(user_agent="my-application123")
-
-def get_province(city_name):
-
-    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
-
-    try:
-        location = geolocator.geocode(f"{city}, Polska")
-        if location:
-            display_name = location.raw.get('display_name', '')
-            match = re.search(r'województwo (\w+[-\w]*)', display_name)
-            if match:
-                return f"województwo {match.group(1)}"
-    except (GeocoderTimedOut, GeocoderUnavailable) as e:
-        print(f"Błąd geokodowania dla {city}: {e}")
-
-    return manual_provinces.get(city)
 
 def transform_date(publication_date):
     months = {
@@ -47,6 +28,7 @@ def transform_date(publication_date):
         'września': '09', 'października': '10', 'listopada': '11', 'grudnia': '12'
     }
 
+    current_year = datetime.now().year
     if "dzisiaj" in publication_date.lower() or "jutro" in publication_date.lower():
         return datetime.today().date().isoformat()
 
@@ -54,16 +36,23 @@ def transform_date(publication_date):
         if polish_month in publication_date:
             publication_date = publication_date.replace(polish_month, month_num)
             try:
-                data = datetime.strptime(publication_date, '%d %m').replace(year=datetime.now().year)
+                if polish_month == 'lutego' and int(publication_date.split()[0]) == 29:
+                    if is_leap_year(current_year):
+                        data = datetime.strptime(publication_date + f' {current_year}', '%d %m %Y')
+                    else:
+                        return None
+                else:   
+                    data = datetime.strptime(publication_date + f' {current_year}', '%d %m %Y')
                 return data.date().isoformat()
-            except ValueError:
+            except ValueError as e:
+                print(f"Błąd podczas konwersji daty: {e}")
                 return None
 
     days_pattern = re.compile(r'za (\d+) dni')
     days_match = days_pattern.search(publication_date)
     if days_match:
         days = int(days_match.group(1))
-        data = datetime.today() - timedelta(days=days-1)
+        data = datetime.today() + timedelta(days=days)
         return data.date().isoformat()
     return None
 
@@ -81,7 +70,6 @@ def get_firm_name(offer):
     return firm
 
 
-
 def scrapp(site_url, category_name, category_path):
     print(f"Rozpoczynanie scrapowania kategorii: {category_name}")
     chrome_options = Options()
@@ -89,7 +77,6 @@ def scrapp(site_url, category_name, category_path):
     driver = webdriver.Chrome(options=chrome_options)
     current_page = 1
     
-    yesterday = (datetime.now() - timedelta(1)).date()
     Category, created = Categories.objects.get_or_create(Category_name=category_name)
     Website, created = Websites.objects.get_or_create(Website_name="aplikuj", Website_url=site_url)
 
@@ -115,20 +102,26 @@ def scrapp(site_url, category_name, category_path):
 
             location = offer.find('li', class_='offer-card-labels-list-item--workPlace').get_text(strip=True)
 
+            location_details = get_location_details(location)
+            print(location_details)
+            
             province = get_province(location)
 
             job_type = offer.find('li', class_='offer-card-labels-list-item--employmentType').get_text(strip=True)
 
             earnings = offer.find('li', class_='offer-card-labels-list-item--salary').get_text(strip=True) if offer.find('li', class_='offer-card-labels-list-item--salary') else None
 
+            min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
+
             link = site_url + offer.find('a', class_='offer-title')['href']
 
             publication_date_text = offer.find('time').get_text(strip=True)
+            print(publication_date_text)
             publication_date = transform_date(publication_date_text)
 
             firm = get_firm_name(offer)
 
-            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
+            print(f"Pozycja: {position},  Lokacja: {location}, Data: {publication_date}, Województwo: {province}, Link: {link}")
 
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
@@ -140,10 +133,15 @@ def scrapp(site_url, category_name, category_path):
                 new_offer = JobOffers(
                     Position=position,
                     Location=location,
+                    Location_Latitude=location_details['latitude'],
+                    Location_Longitude=location_details['longitude'],
                     Province=province,
                     Firm=firm,
                     Job_type=job_type,
                     Earnings=earnings,
+                    Min_Earnings=min_earnings,
+                    Max_Earnings=max_earnings,
+                    Average_Earnings=average_earnings,
                     Date=publication_date,
                     Link=link,
                     Website=Website,

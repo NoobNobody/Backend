@@ -10,9 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
-from manual_provinces import manual_provinces
+from helping_functions import parse_earnings, get_province, get_location_details
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -21,24 +19,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Backend.settings")
 django.setup()
 
 from api.models import Websites, Categories, JobOffers
-
-geolocator = Nominatim(user_agent="my-application123")
-
-def get_province(city_name):
-
-    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
-
-    try:
-        location = geolocator.geocode(f"{city}, Polska")
-        if location:
-            display_name = location.raw.get('display_name', '')
-            match = re.search(r'województwo (\w+[-\w]*)', display_name)
-            if match:
-                return f"województwo {match.group(1)}"
-    except (GeocoderTimedOut, GeocoderUnavailable) as e:
-        print(f"Błąd geokodowania dla {city}: {e}")
-
-    return manual_provinces.get(city)
 
 def transform_date(publication_date_text):
     if "dzisiaj" in publication_date_text.lower():
@@ -57,7 +37,7 @@ def scrapp(site_url):
     chrome_options.add_argument("--headless")
     driver = webdriver.Chrome(options=chrome_options)
     
-    Category, created = Categories.objects.get_or_create(Category_name="ofertypracyzgov")
+    Category, created = Categories.objects.get_or_create(Category_name="GOV")
     Website, created = Websites.objects.get_or_create(Website_name="oferty.praca.gov", Website_url=site_url)
 
     while True:
@@ -87,6 +67,9 @@ def scrapp(site_url):
 
             location = (offer.find('span', class_='miejscePracyCzlonPierwszy').get_text(strip=True) + offer.find('span', class_='miejscePracyCzlonDrugi').get_text(strip=True)) if offer.find('span', class_='miejscePracyCzlonPierwszy') and offer.find('span', class_='miejscePracyCzlonDrugi') else None
 
+            location_details = get_location_details(location)
+            print(location_details)
+
             province = get_province(location)
 
             job_type = offer.find('span', class_='skroconyRodzajZatrudnienia').get_text(strip=True) if offer.find('span', class_='skroconyRodzajZatrudnienia') else None
@@ -111,6 +94,8 @@ def scrapp(site_url):
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
+                    Location_Latitude=location_details['latitude'],
+                    Location_Longitude=location_details['longitude'],
                     Province=province,
                     Firm=firm,
                     Job_type=job_type,

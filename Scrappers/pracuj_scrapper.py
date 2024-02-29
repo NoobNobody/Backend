@@ -10,9 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
-from manual_provinces import manual_provinces
+from helping_functions import parse_earnings, get_province, get_location_details
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -21,25 +19,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Backend.settings")
 django.setup()
 
 from api.models import Websites, Categories, JobOffers
-
-geolocator = Nominatim(user_agent="my-application123")
-
-def get_province(city_name):
-
-    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
-
-    try:
-        location = geolocator.geocode(f"{city}, Polska")
-        if location:
-            display_name = location.raw.get('display_name', '')
-            match = re.search(r'województwo (\w+[-\w]*)', display_name)
-            if match:
-                return f"województwo {match.group(1)}"
-    except (GeocoderTimedOut, GeocoderUnavailable) as e:
-        print(f"Błąd geokodowania dla {city}: {e}")
-
-    return manual_provinces.get(city)
-
         
 def transform_date(publication_date):
     months = {
@@ -106,6 +85,8 @@ def scrapp(site_url, category_name, category_path):
 
             earnings = offer.find('span', attrs={'data-test': 'offer-salary'}).get_text(strip=True) if offer.find('span', attrs={'data-test': 'offer-salary'}) else None
 
+            min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
+
             working_hours = offer.find('li', attrs={'data-test': 'offer-additional-info-1'}).get_text(strip=True) if offer.find('li', attrs={'data-test': 'offer-additional-info-1'}) else None
 
             info_elements = offer.find_all('li', class_='tiles_iwlrcdk')
@@ -132,6 +113,9 @@ def scrapp(site_url, category_name, category_path):
                         location = lok.a.get_text(strip=True)
                         link = lok.a['href']
 
+                        location_details = get_location_details(location)
+                        print(location_details)
+
                         province = get_province(location)
 
                         print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
@@ -146,12 +130,17 @@ def scrapp(site_url, category_name, category_path):
                             new_offer=JobOffers(
                                 Position=position,
                                 Location=location,
+                                Location_Latitude=location_details['latitude'],
+                                Location_Longitude=location_details['longitude'],
                                 Province=province,
                                 Firm=firm,
                                 Job_type=job_type,
                                 Job_model=job_model,
                                 Working_hours=working_hours,
                                 Earnings=earnings,
+                                Min_Earnings=min_earnings,
+                                Max_Earnings=max_earnings,
+                                Average_Earnings=average_earnings,
                                 Date=publication_date,
                                 Link=link,
                                 Website=Website,
@@ -167,6 +156,9 @@ def scrapp(site_url, category_name, category_path):
                     location = location_element.get_text(strip=True) if location_element else None
                     link = offer.find('a', attrs={'data-test': 'link-offer'})['href'] if offer.find('a', attrs={'data-test': 'link-offer'}) else None
                     
+                    location_details = get_location_details(location)
+                    print(location_details)
+
                     province = get_province(location)
 
                     print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
@@ -179,19 +171,24 @@ def scrapp(site_url, category_name, category_path):
 
                     if not existing_offer:
                         new_offer=JobOffers(
-                            Position=position,
-                            Location=location,
-                            Province=province,
-                            Firm=firm,
-                            Job_type=job_type,
-                            Job_model=job_model,
-                            Working_hours=working_hours,
-                            Earnings=earnings,
-                            Date=publication_date,
-                            Link=link,
-                            Website=Website,
-                            Category=Category
-                        )
+                                Position=position,
+                                Location=location,
+                                Location_Latitude=location_details['latitude'],
+                                Location_Longitude=location_details['longitude'],
+                                Province=province,
+                                Firm=firm,
+                                Job_type=job_type,
+                                Job_model=job_model,
+                                Working_hours=working_hours,
+                                Earnings=earnings,
+                                Min_Earnings=min_earnings,
+                                Max_Earnings=max_earnings,
+                                Average_Earnings=average_earnings,
+                                Date=publication_date,
+                                Link=link,
+                                Website=Website,
+                                Category=Category
+                            )
                         new_offer.save()
                         print(f"Zapisano nową ofertę pracy: {position} w {location}.")
                     else:
@@ -208,22 +205,22 @@ def scrapp(site_url, category_name, category_path):
 
 categories = {
     # "Administracja biurowa": "administracja%20biurowa;cc,5001",
-    "Badania i rozwój": "badania%20i%20rozwój;cc,5002",
-    "Bankowość": "bankowość;cc,5003",
-    "BHP / Ochrona środowiska": "bhp%20ochrona%20środowiska;cc,5004",
-    "Budownictwo / Remonty / Geodezja": "budownictwo;cc,5005",
-    "Obsługa klienta i call center": "call%20center;cc,5006",
-    "Doradztwo / Konsulting": "doradztwo%20konsulting;cc,5037",
-    "Energetyka": "energetyka;cc,5036",
-    "Nauka / Edukacja / Szkolenia": "edukacja%20szkolenia;cc,5007",
-    "Finanse / Ekonomia / Księgowość": "finanse%20ekonomia;cc,5008",
-    "Franczyza / Własny biznes": "franczyza%20własny%20biznes;cc,5009",
-    "Hotelarstwo / Gastronomia / Turystyka": "hotelarstwo%20gastronomia%20turystyka;cc,5010",
-    "Human Resources / Zasoby ludzkie": "human%20resources%20zasoby%20ludzkie;cc,5011",
-    "Internet / e-Commerce": "internet%20e-commerce%20nowe%20media;cc,5013",
-    "Inżynieria": "inżynieria;cc,5014",
-    "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20administracja;cc,5015",
-    "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20rozwój%20oprogramowania;cc,5016",
+    # "Badania i rozwój": "badania%20i%20rozwój;cc,5002",
+    # "Bankowość": "bankowość;cc,5003",
+    # "BHP / Ochrona środowiska": "bhp%20ochrona%20środowiska;cc,5004",
+    # "Budownictwo / Remonty / Geodezja": "budownictwo;cc,5005",
+    # "Obsługa klienta i call center": "call%20center;cc,5006",
+    # "Doradztwo / Konsulting": "doradztwo%20konsulting;cc,5037",
+    # "Energetyka": "energetyka;cc,5036",
+    # "Nauka / Edukacja / Szkolenia": "edukacja%20szkolenia;cc,5007",
+    # "Finanse / Ekonomia / Księgowość": "finanse%20ekonomia;cc,5008",
+    # "Franczyza / Własny biznes": "franczyza%20własny%20biznes;cc,5009",
+    # "Hotelarstwo / Gastronomia / Turystyka": "hotelarstwo%20gastronomia%20turystyka;cc,5010",
+    # "Human Resources / Zasoby ludzkie": "human%20resources%20zasoby%20ludzkie;cc,5011",
+    # "Internet / e-Commerce": "internet%20e-commerce%20nowe%20media;cc,5013",
+    # "Inżynieria": "inżynieria;cc,5014",
+    # "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20administracja;cc,5015",
+    # "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20rozwój%20oprogramowania;cc,5016",
     "Kontrola jakości": "kontrola%20jakości;cc,5034",
     "Łańcuch dostaw": "łańcuch%20dostaw;cc,5017",
     "Marketing i PR": "marketing;cc,5018",

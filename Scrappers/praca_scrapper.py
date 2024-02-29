@@ -10,9 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
-from manual_provinces import manual_provinces
+from helping_functions import parse_earnings, get_province, get_location_details
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -21,24 +19,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Backend.settings")
 django.setup()
 
 from api.models import Websites, Categories, JobOffers
-
-geolocator = Nominatim(user_agent="my-application123")
-
-def get_province(city_name):
-
-    city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()
-
-    try:
-        location = geolocator.geocode(f"{city}, Polska")
-        if location:
-            display_name = location.raw.get('display_name', '')
-            match = re.search(r'województwo (\w+[-\w]*)', display_name)
-            if match:
-                return f"województwo {match.group(1)}"
-    except (GeocoderTimedOut, GeocoderUnavailable) as e:
-        print(f"Błąd geokodowania dla {city}: {e}")
-
-    return manual_provinces.get(city)
 
 def transform_date(publication_date):
     days_pattern = re.compile(r'(\d+)\s+(?:dzie[ńn]|dni)')
@@ -97,6 +77,9 @@ def scrapp(site_url, category_name, category_path):
                 location_text = None
             location = location_text
 
+            location_details = get_location_details(location)
+            print(location_details)
+            
             province = get_province(location)
 
             working_hours = offer.find('li', attrs={'data-test': 'offer-additional-info-1'}).get_text(strip=True) if offer.find('li', attrs={'data-test': 'offer-additional-info-1'}) else None
@@ -140,6 +123,9 @@ def scrapp(site_url, category_name, category_path):
                 working_hours = None
                 earnings = None
 
+
+            min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
+
             publication_date_text = offer.find('div', class_='listing__secondary-details listing__secondary-details--with-teaser').get_text(strip=True) if offer.find('div', class_='listing__secondary-details listing__secondary-details--with-teaser') else 'Brak danych'
             publication_date = transform_date(publication_date_text)
             if publication_date is None:
@@ -167,12 +153,17 @@ def scrapp(site_url, category_name, category_path):
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
+                    Location_Latitude=location_details['latitude'],
+                    Location_Longitude=location_details['longitude'],
                     Province=province,
                     Firm=firm,
                     Job_type=job_type,
                     Job_model=job_model,
                     Working_hours=working_hours,
                     Earnings=earnings,
+                    Min_Earnings=min_earnings,
+                    Max_Earnings=max_earnings,
+                    Average_Earnings=average_earnings,
                     Date=publication_date,
                     Link=link,
                     Website=Website,
