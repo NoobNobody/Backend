@@ -63,7 +63,7 @@ manual_provinces = {
     "Paczyna": "województwo śląskie",
     "Nakło Śląskie": "województwo śląskie",
     "Leśna": "województwo dolnośląskie",
-    "Paczyna": "województwo śląskie",
+    "Bujaków": "województwo śląskie",
     "Paczyna": "województwo śląskie",
     "Paczyna": "województwo śląskie",
     "Paczyna": "województwo śląskie",

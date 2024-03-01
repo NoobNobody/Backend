@@ -5,7 +5,8 @@ from rest_framework.pagination import PageNumberPagination
 from .models import Categories, JobOffers
 from .serializers import CategoriesSerializer, JobOffersSerializer
 from rest_framework.response import Response
-from django.db.models import Avg, Max, Min, Case, When, Value, FloatField, Count, Q, CharField
+from django.db.models import Avg, Max, Min, Case, When, Value, Count, Q, CharField
+from django.db.models.functions import TruncDay
 import re
 from .helping_methods import extract_earnings_data, sanitize_salary_range
 
@@ -43,7 +44,7 @@ class AverageEarningsAnalysis(APIView):
 
         job_offers = JobOffers.objects.annotate(
             job_type=Case(
-                When(Average_Earnings__gt=1000, then=Value('monthly')),
+                When(Average_Earnings__gt=1000, Min_Earnings__gt=1000, Max_Earnings__gt=1000, then=Value('monthly')),
                 When(Average_Earnings__lte=1000, then=Value('hourly')),
                 default=Value('unknown'),  
                 output_field=CharField(),
@@ -108,6 +109,16 @@ class EarningsHeatmapAnalysis(APIView):
 
         return Response(response_data)
 
+class JobOffersByDayAnalysis(APIView):
+    def get(self, request, format=None):
+        job_offers_by_day = (
+            JobOffers.objects
+            .annotate(day=TruncDay('Date'))
+            .values('day')
+            .annotate(offers_count=Count('id'))
+            .order_by('day')
+        )
+        return Response(job_offers_by_day)
        
 class FilterAllJobOffers(APIView):
     def get(self, request, *args, **kwargs):
