@@ -45,6 +45,24 @@ def parse_earnings(earnings_str):
     logging.warning('Nie udało się sklasyfikować zarobków.')
     return None, None, None, None
 
+def get_earnings_type(min_earnings, max_earnings):
+    if min_earnings is None or max_earnings is None:
+        return None
+
+    if min_earnings == max_earnings: 
+        if min_earnings < 500: 
+            earnings_type = 'hourly'
+        else:
+            earnings_type = 'monthly'
+
+    else:  
+        average_earnings = (min_earnings + max_earnings) / 2
+        if average_earnings < 500:
+            earnings_type = 'hourly'
+        else:
+            earnings_type = 'monthly'
+
+    return earnings_type
 
 def get_province(city_name):
     city = re.sub(r"\s*\([^)]*\)", "", city_name).split(',')[0].strip()

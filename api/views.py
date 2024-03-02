@@ -8,7 +8,10 @@ from rest_framework.response import Response
 from django.db.models import Avg, Max, Min, Case, When, Value, Count, Q, CharField
 from django.db.models.functions import TruncDay
 import re
-from .helping_methods import extract_earnings_data, sanitize_salary_range
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -133,7 +136,6 @@ class FilterAllJobOffers(APIView):
         job_type_filter = request.query_params.getlist('selectedJobType')
         salary_type = request.query_params.get('selectedSalaryType')
         salary_range = request.query_params.get('selectedSalaryRange')
-        salary_range = sanitize_salary_range(salary_range)
 
         if category_name:
             offers_query = JobOffers.objects.filter(Category__Category_name=category_name)
@@ -206,31 +208,26 @@ class FilterAllJobOffers(APIView):
             offers_query = offers_query.filter(query)  
 
         if salary_type and salary_range:
-            if salary_range.startswith('>'):
-                min_range = int(salary_range[1:])
-                offers = []
-                for offer in offers_query:
-                    min_earnings, max_earnings, earnings_type = extract_earnings_data(offer.Earnings)
-                    if earnings_type == salary_type and max_earnings is not None:
-                        if max_earnings > min_range:
-                            offers.append(offer)
-            elif salary_range.startswith('<'):
-                max_range = int(salary_range[1:])
-                offers = []
-                for offer in offers_query:
-                    min_earnings, max_earnings, earnings_type = extract_earnings_data(offer.Earnings)
-                    if earnings_type == salary_type and min_earnings is not None:
-                        if min_earnings < max_range:
-                            offers.append(offer)
+
+            if salary_range.startswith("Mniejsze niż"):
+                max_salary = salary_range.split(' ')[2].replace('zł', '').strip()
+                offers_query = offers_query.filter(
+                    Max_Earnings__lt=max_salary,
+                    Earnings_Type=salary_type
+                )
+            elif salary_range.startswith("Większe niż"):
+                min_salary = salary_range.split(' ')[2].replace('zł', '').strip()
+                offers_query = offers_query.filter(
+                    Max_Earnings__gte=min_salary,
+                    Earnings_Type=salary_type
+                )
             else:
-                min_range, max_range = map(int, salary_range.split('-'))
-                offers = []
-                for offer in offers_query:
-                    min_earnings, max_earnings, earnings_type = extract_earnings_data(offer.Earnings)
-                    if earnings_type == salary_type and min_earnings is not None and max_earnings is not None:
-                        if min_earnings <= max_range and max_earnings >= min_range:
-                            offers.append(offer)
-            offers_query = JobOffers.objects.filter(id__in=[offer.id for offer in offers])
+                min_salary, max_salary = [int(s) for s in salary_range.replace('zł', '').replace(' ', '').split('-')]
+                offers_query = offers_query.filter(
+                    Min_Earnings__lte=max_salary,
+                    Max_Earnings__gte=min_salary,
+                    Earnings_Type=salary_type
+                )
 
         offers_query = offers_query.order_by('-Date')
         result_page = paginator.paginate_queryset(offers_query, request, view=self)

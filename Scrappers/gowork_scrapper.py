@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from helping_functions import parse_earnings, get_province, get_location_details
+from helping_functions import get_earnings_type, parse_earnings, get_province, get_location_details
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -105,6 +105,7 @@ def scrapp(site_url, category_name, category_path):
                 earnings = None
 
             min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
+            earnings_type = get_earnings_type(min_earnings, max_earnings)
 
             divs = offer.find_all("div", class_="g-job-offer-tags")
             job_type = working_hours = job_model = None
@@ -147,6 +148,7 @@ def scrapp(site_url, category_name, category_path):
                     Min_Earnings=min_earnings,
                     Max_Earnings=max_earnings,
                     Average_Earnings=average_earnings,
+                    Earnings_Type=earnings_type,
                     Date=publication_date,
                     Link=full_link,
                     Website=Website,

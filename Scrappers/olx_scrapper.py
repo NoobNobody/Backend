@@ -10,7 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from helping_functions import parse_earnings, get_province, get_location_details
+from helping_functions import parse_earnings, get_province, get_location_details, get_earnings_type
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_path)
@@ -95,6 +95,7 @@ def scrapp(site_url, category_name, category_path):
             print(location_details)
 
             min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
+            earnings_type = get_earnings_type(min_earnings, max_earnings)
 
             province = get_province(location)
 
@@ -128,6 +129,7 @@ def scrapp(site_url, category_name, category_path):
                     Min_Earnings=min_earnings,
                     Max_Earnings=max_earnings,
                     Average_Earnings=average_earnings,
+                    Earnings_Type=earnings_type,
                     Date=publication_date,
                     Link=full_link,
                     Website=Website,
@@ -147,8 +149,8 @@ def scrapp(site_url, category_name, category_path):
     driver.quit()
 
 categories = {
-    "Administracja biurowa": "administracja-biurowa",
-    "Badania i rozwój": "badania-rozwoj",
+    # "Administracja biurowa": "administracja-biurowa",
+    # "Badania i rozwój": "badania-rozwoj",
     "Budownictwo / Remonty / Geodezja": "budowa-remonty",
     "Dostawca, kurier miejski": "dostawca-kurier-miejski",
     "Internet / e-Commerce": "e-commerce-handel-internetowy",

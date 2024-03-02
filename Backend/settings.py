@@ -10,9 +10,7 @@ SECRET_KEY = 'django-insecure-4cl2k#*muk&le9@0w=^4@7w#==ttk4)2^xa&u4**at&_h=3l99
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['djangojobbufferapp.azurewebsites.net', '127.0.0.1', 'localhost']
-
-
+ALLOWED_HOSTS = ['djangojobbufferapp.azurewebsites.net', 'jobbufferback.azurewebsites.net', 'https://jobbufferfront.azurewebsites.net', '127.0.0.1', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
@@ -42,7 +40,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:5173",
-    "https://jobbufferfront.azurewebsites.net"
+    "https://jobbufferfront.azurewebsites.net",
+    "http://192.168.56.1:3000"
 ]
 
 ROOT_URLCONF = 'Backend.urls'

@@ -22,6 +22,7 @@ class JobOffers(models.Model):
     Min_Earnings = models.DecimalField(max_digits=20, decimal_places=1, null=True, blank=True)
     Max_Earnings = models.DecimalField(max_digits=20, decimal_places=1, null=True, blank=True)
     Average_Earnings = models.DecimalField(max_digits=20, decimal_places=1, null=True, blank=True)
+    Earnings_Type = models.CharField(max_length=50, null=True, blank=True)
     Location = models.CharField(max_length=200, null=True, blank=True)
     Location_Latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     Location_Longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
