@@ -19,12 +19,20 @@ class JobOffers(models.Model):
     Category = models.ForeignKey(Categories, on_delete=models.CASCADE, null=True)
     Firm = models.CharField(max_length=200, blank=True, null=True)
     Earnings = models.CharField(max_length=100, null=True, blank=True)
+    Min_Earnings = models.DecimalField(max_digits=20, decimal_places=1, null=True, blank=True)
+    Max_Earnings = models.DecimalField(max_digits=20, decimal_places=1, null=True, blank=True)
+    Average_Earnings = models.DecimalField(max_digits=20, decimal_places=1, null=True, blank=True)
+    Earnings_Type = models.CharField(max_length=50, null=True, blank=True)
     Location = models.CharField(max_length=200, null=True, blank=True)
+    Location_Latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    Location_Longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    Province = models.CharField(max_length=50, null=True, blank=True)
     Date = models.DateField(null=True, blank=True)
     Job_type = models.CharField(max_length=200, null=True, blank=True)
     Working_hours = models.CharField(max_length=200, null=True, blank=True)
     Job_model = models.CharField(max_length=200, null=True, blank=True)
     Link = models.URLField(max_length=1000, default='')
+
 
     class Meta:
         ordering = ['-Date'] 
@@ -32,4 +40,3 @@ class JobOffers(models.Model):
     def __str__(self):
         return f"{self.Position} w {self.Website}"
     
-
