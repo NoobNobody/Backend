@@ -1,9 +1,18 @@
 from django.urls import path
-from .views import JobOffersList, JobOffersByCategory, create_job_offer, hello_world
+from .views import JobOffersByDayAnalysis, JobOffersList, CategoriesList, FilterAllJobOffers, JobOffersAnalysis, JobOffersCategoryAnalysis, AverageEarningsAnalysis, EarningsHeatmapAnalysis
 
 urlpatterns = [
-    path('oferty/', JobOffersList.as_view(), name='lista-ofert-pracy'),
-    path('oferty/kategoria/<int:category_id>/', JobOffersByCategory.as_view(), name='oferty-pracy-wedlug-kategorii'),
-    path('ofertypracy/', create_job_offer, name='create_job_offer'),
-    path('hello-world/', hello_world, name='hello_world'),
+    path('offers/', JobOffersList.as_view(), name='job_offers_list'),
+    path('categories/', CategoriesList.as_view(), name='categories-list'),
+    path('offers/filter/', FilterAllJobOffers.as_view(), name='search-job-offers'),
+
+    path('analysis/job_offers', JobOffersAnalysis.as_view(), name='job_offers_analysis'),
+    path('analysis/job_offers_category/', JobOffersCategoryAnalysis.as_view(), name='job_offers_category_analysis'),
+    path('analysis/average_earnings/', AverageEarningsAnalysis.as_view(), name='average_earnings_analysis'),
+    path('analysis/earnings_heatmap/', EarningsHeatmapAnalysis.as_view(), name='heatmap_earnings_analysis'),
+    path('analysis/job_offers_by_day/', JobOffersByDayAnalysis.as_view(), name='job_offers_by_day'),
 ]
+    
+
+    
+

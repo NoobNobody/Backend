@@ -10,9 +10,7 @@ SECRET_KEY = 'django-insecure-4cl2k#*muk&le9@0w=^4@7w#==ttk4)2^xa&u4**at&_h=3l99
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['djangojobbufferapp.azurewebsites.net', '127.0.0.1', 'localhost']
-
-
+ALLOWED_HOSTS = ['djangojobbufferapp.azurewebsites.net', 'jobbufferback.azurewebsites.net', 'https://jobbufferfront.azurewebsites.net', '127.0.0.1', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
@@ -21,16 +19,15 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    "whitenoise.runserver_nostatic",
     'django.contrib.staticfiles',
     'rest_framework',
     'api',
+    'Scrappers',
     'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -42,23 +39,17 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "https://jobbufferfront.azurewebsites.net",
+    "http://192.168.56.1:3000"
 ]
-
-STORAGES = {
-    # ...
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
 
 ROOT_URLCONF = 'Backend.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "staticfiles"],  
-        # 'DIRS': ['C:/Users/Nobody/Documents/PracaInżynierska/Frontend/dist'],  
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -86,7 +77,7 @@ DATABASES = {
         'HOST': 'joboffers.database.windows.net',
         'PORT': '1433',
         'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
+            'driver': 'ODBC Driver 18 for SQL Server',
         },
     }
 }
@@ -126,12 +117,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [
-    # BASE_DIR / 'C:/Users/Nobody/Documents/PracaInżynierska/Frontend/dist'
-    # BASE_DIR / "staticfiles",
-]
-
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
