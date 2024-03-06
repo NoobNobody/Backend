@@ -66,3 +66,4 @@ jobs:
           app-name: "JobBufferBack"
           slot-name: "Production"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1082F03F591C4A9CB628A330DBDB22E1 }}
+
