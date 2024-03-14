@@ -7,6 +7,7 @@ from .serializers import CategoriesSerializer, JobOffersSerializer
 from rest_framework.response import Response
 from django.db.models import Avg, Max, Min, Case, When, Value, Count, Q, CharField
 from django.db.models.functions import TruncDay
+from django.http import JsonResponse
 import re
 import logging
 
@@ -111,6 +112,28 @@ class EarningsHeatmapAnalysis(APIView):
         } for location, data in location_earnings.items()]
 
         return Response(response_data)
+
+class JobOffersLocations(APIView):
+    def get(self, request, format=None):
+        job_offers = JobOffers.objects.exclude(Location_Latitude__isnull=True)\
+                                      .exclude(Location_Longitude__isnull=True)
+
+        locations = {}
+        for offer in job_offers:
+            location_name = re.sub(r'(\,|\().*$', '', offer.Location).strip()
+            key = (location_name, offer.Location_Latitude, offer.Location_Longitude)
+            if key not in locations:
+                locations[key] = {
+                    "name": location_name,
+                    "Coordinates": {
+                        "lat": offer.Location_Latitude,
+                        "lng": offer.Location_Longitude
+                    },
+                    "count": 0
+                }
+            locations[key]["count"] += 1
+        
+        return Response(list(locations.values()))
 
 class JobOffersByDayAnalysis(APIView):
     def get(self, request, format=None):

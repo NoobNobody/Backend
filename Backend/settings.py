@@ -10,7 +10,7 @@ SECRET_KEY = 'django-insecure-4cl2k#*muk&le9@0w=^4@7w#==ttk4)2^xa&u4**at&_h=3l99
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['djangojobbufferapp.azurewebsites.net', 'jobbufferback.azurewebsites.net', 'https://jobbufferfront.azurewebsites.net', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['jobbufferback.azurewebsites.net', 'https://jobbufferfront.azurewebsites.net', '127.0.0.1', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
