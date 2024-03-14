@@ -149,9 +149,9 @@ def scrapp(site_url, category_name, category_path):
     driver.quit()
 
 categories = {
-    # "Administracja biurowa": "administracja-biurowa",
-    # "Badania i rozwój": "badania-rozwoj",
-    # "Budownictwo / Remonty / Geodezja": "budowa-remonty",
+    "Administracja biurowa": "administracja-biurowa",
+    "Badania i rozwój": "badania-rozwoj",
+    "Budownictwo / Remonty / Geodezja": "budowa-remonty",
     "Dostawca, kurier miejski": "dostawca-kurier-miejski",
     "Internet / e-Commerce": "e-commerce-handel-internetowy",
     "Nauka / Edukacja / Szkolenia": "edukacja",
