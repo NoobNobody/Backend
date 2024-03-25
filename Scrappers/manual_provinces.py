@@ -128,4 +128,6 @@ manual_provinces = {
     "Ogrodzona": "województwo śląskie",
     "Jejkowice": "województwo śląskie",
     "Preczów": "województwo śląskie",
+    "Warszowice": "województwo śląskie",
+    "Goleszów": "województwo śląskie",
 }

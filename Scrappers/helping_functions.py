@@ -12,13 +12,11 @@ def is_leap_year(year):
 
 
 def parse_earnings(earnings_str):
-    logging.info(f'Przetwarzanie danych o zarobkach: {earnings_str}')
 
     if not earnings_str:
         return None, None, None, None
 
     normalized_str = re.sub(r'\s+', '', earnings_str).replace(',', '.')
-    logging.info(f'Znormalizowany ciąg zarobków: {normalized_str}')
 
     numbers = re.findall(r'\d+(?:\.\d+)?', normalized_str)
     if not numbers:
@@ -32,17 +30,12 @@ def parse_earnings(earnings_str):
     else:
         min_earnings = max_earnings = average_value = numbers[0]
 
-    logging.info(f'Wyekstrahowane wartości zarobków: {numbers}, min: {min_earnings}, max: {max_earnings}, średnia: {average_value}')
-
     if 'zł/godzinę' in normalized_str or (average_value and average_value < 500):
-        logging.info('Zarobki sklasyfikowane jako godzinowe.')
         return min_earnings, max_earnings, average_value, 'hourly'
         
     elif 'zł/mies.' in normalized_str or (average_value and average_value >= 500):
-        logging.info('Zarobki sklasyfikowane jako miesięczne.')
         return min_earnings, max_earnings, average_value, 'monthly'
 
-    logging.warning('Nie udało się sklasyfikować zarobków.')
     return None, None, None, None
 
 def get_earnings_type(min_earnings, max_earnings):
@@ -69,7 +62,6 @@ def get_province(city_name):
 
     try:
         location = geolocator.geocode(f"{city}, Polska")
-        print("LOCATION: ", location)
         if location:
             display_name = location.raw.get('display_name', '')
             match = re.search(r'województwo (\w+[-\w]*)', display_name)

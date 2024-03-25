@@ -39,13 +39,12 @@ def scrapp(site_url, category_name, category_path):
     while True:
         publication_date = calculate_date_based_on_page(current_page)
         if current_page == 1:
-            
             page_url = f"{site_url}/ogloszenia/?filter-category={category_path}"
-            print(page_url)
         else:
             page_url = f"{site_url}/ogloszenia/page/{current_page}/?filter-category={category_path}"
-            print(page_url)
+
         driver.get(page_url)
+        print(f"Aktualna strona: {page_url}")
 
         try:
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'job-list-content')))
@@ -66,8 +65,6 @@ def scrapp(site_url, category_name, category_path):
             location = offer.find('div', class_='job-location').get_text(strip=True) if offer.find('div', class_='job-location') else None
 
             location_details = get_location_details(location)
-            print(location_details)
-
             province = get_province(location)
 
             earnings = offer.find('div', class_='job-salary with-icon').get_text(strip=True) if offer.find('div', class_='job-salary with-icon') else None
@@ -78,8 +75,6 @@ def scrapp(site_url, category_name, category_path):
             working_hours = offer.find('div', class_='job-type').get_text(strip=True) if offer.find('div', class_='job-type') else None
 
             link = offer.find('h2', class_='job-title').find('a')['href'] if offer.find('h2', class_='job-title').find('a') else None
-            
-            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
             existing_offer = JobOffers.objects.filter(
                 Position=position,
@@ -88,6 +83,7 @@ def scrapp(site_url, category_name, category_path):
             ).first()
 
             if not existing_offer:
+                print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}, Zarobki: {earnings}")
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
@@ -106,9 +102,11 @@ def scrapp(site_url, category_name, category_path):
                     Category=Category
                 )
                 new_offer.save()
-                print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                print(f"Zapisano w bazie danych nową ofertę pracy!")
+                print()
             else:
                 print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                print()
 
         next_page_exists = driver.find_elements(By.CSS_SELECTOR, '.next.page-numbers')
         if not next_page_exists:
