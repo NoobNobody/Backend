@@ -41,8 +41,10 @@ def scrapp(site_url, category_name, category_path):
 
     while True:
         page_url = f"{site_url}/pl/szukaj-pracy?page={current_page}&industries={category_path}"
+
         driver.get(page_url)
-        print(f"Rozpoczęcie scrapowania strony: {page_url}")
+        print(f"Aktualna strona: {page_url}")
+        
         try:
             WebDriverWait(driver, 20).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.card-body')))
         except TimeoutException:
@@ -62,8 +64,6 @@ def scrapp(site_url, category_name, category_path):
                 location = location.split(',')[0].strip()
 
             location_details = get_location_details(location)
-            print(location_details)
-
             province = get_province(location)
 
             job_type_element = offer.select_one('.type')
@@ -78,14 +78,13 @@ def scrapp(site_url, category_name, category_path):
             link = position_element['href'] if position_element else None
             full_link = site_url + link
 
-            print(f"Pozycja: {position},  Lokacja: {location}, Data: {publication_date}, Województwo: {province}, Link: {link}")
-
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
                 Location=location
             ).first()
 
             if not existing_offer:
+                print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}")
                 new_offer=JobOffers(
                     Position=position,
                     Firm="Manpower",
@@ -100,9 +99,11 @@ def scrapp(site_url, category_name, category_path):
                     Category=Category
                 )
                 new_offer.save()
-                print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                print(f"Zapisano w bazie danych nową ofertę pracy!")
+                print()
             else:
                 print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                print()
 
         next_page_exists = driver.find_elements(By.CSS_SELECTOR, 'a.page-link.more')
         if not next_page_exists:
