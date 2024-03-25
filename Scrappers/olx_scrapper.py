@@ -56,12 +56,12 @@ def scrapp(site_url, category_name, category_path):
 
     while True:
         if current_page == 1:
-            print(f"Scrapowanie strony: {site_url}/praca/{category_path}/")
             page_url = f"{site_url}/praca/{category_path}/"
         else:
-            print(f"Scrapowanie strony: {site_url}/praca/{category_path}/?page={current_page}")
             page_url = f"{site_url}/praca/{category_path}/?page={current_page}"
+        
         driver.get(page_url)
+        print(f"Aktualna strona: {page_url}")
 
         try:
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-cy="l-card"]')))
@@ -92,7 +92,6 @@ def scrapp(site_url, category_name, category_path):
                             job_type = text
 
             location_details = get_location_details(location)
-            print(location_details)
 
             min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
             earnings_type = get_earnings_type(min_earnings, max_earnings)
@@ -108,14 +107,13 @@ def scrapp(site_url, category_name, category_path):
             link = offer.find('a')['href'] if offer.find('a') else None
             full_link = site_url + link if link else None
 
-            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
-
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
                 Location=location
             ).first()
 
             if not existing_offer:
+                print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}, Zarobki: {earnings}")
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
@@ -136,9 +134,11 @@ def scrapp(site_url, category_name, category_path):
                     Category=Category
                 )
                 new_offer.save()
-                print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                print(f"Zapisano w bazie danych nową ofertę pracy!")
+                print()
             else:
                 print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                print()
 
         next_page_exists = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy="pagination-forward"]')
         if not next_page_exists:

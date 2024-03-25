@@ -48,6 +48,7 @@ def scrapp(site_url, category_name, category_path):
             page_url = f"{site_url}/{category_path}_{current_page}.html"
 
         driver.get(page_url)
+        print(f"Aktualna strona: {page_url}")
 
         try:
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'listing__item')))
@@ -78,8 +79,7 @@ def scrapp(site_url, category_name, category_path):
             location = location_text
 
             location_details = get_location_details(location)
-            print(location_details)
-            
+
             province = get_province(location)
 
             working_hours = offer.find('li', attrs={'data-test': 'offer-additional-info-1'}).get_text(strip=True) if offer.find('li', attrs={'data-test': 'offer-additional-info-1'}) else None
@@ -123,7 +123,6 @@ def scrapp(site_url, category_name, category_path):
                 working_hours = None
                 earnings = None
 
-
             min_earnings, max_earnings, average_earnings, _ = parse_earnings(earnings)
             earnings_type = get_earnings_type(min_earnings, max_earnings)
             
@@ -134,15 +133,6 @@ def scrapp(site_url, category_name, category_path):
                 continue
 
             link = offer.find('a', class_='listing__title')['href'] if offer.find('a', class_='listing__title') else None
-            
-            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
-
-            try:
-                check_date = datetime.strptime(publication_date, '%Y-%m-%d').date()
-                print(f"Sprawdzana data: {check_date}") 
-            except TypeError as e:
-                print(f"Błąd przekształcania daty: {e}, dla daty publikacji: {publication_date}")
-                continue
 
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
@@ -151,6 +141,7 @@ def scrapp(site_url, category_name, category_path):
             ).first()
 
             if not existing_offer:
+                print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}, Zarobki: {earnings}")
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
@@ -172,9 +163,11 @@ def scrapp(site_url, category_name, category_path):
                     Category=Category
                 )
                 new_offer.save()
-                print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                print(f"Zapisano w bazie danych nową ofertę pracy!")
+                print()
             else:
                 print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                print()
 
         next_page_exists = driver.find_elements(By.CSS_SELECTOR, 'a.pagination__item.pagination__item--next')
         if not next_page_exists:
@@ -185,34 +178,34 @@ def scrapp(site_url, category_name, category_path):
     driver.quit()
             
 categories = {
-    # "Administracja biurowa": "administracja-biurowa",
-    # "Sektor publiczny": "administracja-publiczna-sluzba-cywilna",
-    # "Architektura": "architektura",
-    # "Badania i rozwój": "badania-i-rozwoj",
-    # "Budownictwo / Remonty / Geodezja": "budownictwo-geodezja",
-    # "Doradztwo / Konsulting": "doradztwo-konsulting",
-    # "Nauka / Edukacja / Szkolenia": "edukacja-nauka-szkolenia",
-    # "Energetyka": "energetyka-elektronika",
-    # "Laboratorium / Farmacja / Biotechnologia": "farmaceutyka-biotechnologia",
-    # "Finanse / Ekonomia / Księgowość": "finanse-bankowosc",
-    # "Hotelarstwo / Gastronomia / Turystyka": "gastronomia-catering",
-    # "Hotelarstwo / Gastronomia / Turystyka": "turystyka-hotelarstwo",
-    # "Reklama / Grafika / Kreacja / Fotografia": "grafika-fotografia-kreacja",
+    "Administracja biurowa": "administracja-biurowa",
+    "Sektor publiczny": "administracja-publiczna-sluzba-cywilna",
+    "Architektura": "architektura",
+    "Badania i rozwój": "badania-i-rozwoj",
+    "Budownictwo / Remonty / Geodezja": "budownictwo-geodezja",
+    "Doradztwo / Konsulting": "doradztwo-konsulting",
+    "Nauka / Edukacja / Szkolenia": "edukacja-nauka-szkolenia",
+    "Energetyka": "energetyka-elektronika",
+    "Laboratorium / Farmacja / Biotechnologia": "farmaceutyka-biotechnologia",
+    "Finanse / Ekonomia / Księgowość": "finanse-bankowosc",
+    "Hotelarstwo / Gastronomia / Turystyka": "gastronomia-catering",
+    "Hotelarstwo / Gastronomia / Turystyka": "turystyka-hotelarstwo",
+    "Reklama / Grafika / Kreacja / Fotografia": "grafika-fotografia-kreacja",
     "Human Resources / Zasoby ludzkie": "human-resources-kadry",
-    # "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "informatyka-administracja",
+    "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "informatyka-administracja",
     "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "informatyka-programowanie",
-    # "Internet / e-Commerce": "internet-e-commerce",
-    # "Inżynieria": "inzynieria-projektowanie",
-    # "Kadra kierownicza": "kadra-zarzadzajaca",
-    # "Kontrola jakości": "kontrola-jakosci",
-    # "Fryzjerstwo, kosmetyka": "kosmetyka-pielegnacja",
-    # "Finanse / Ekonomia / Księgowość": "ksiegowosc-audyt-podatki",
-    # "Transport / Spedycja / Logistyka / Kierowca": "logistyka-dystrybucja",
-    # "Transport / Spedycja / Logistyka / Kierowca": "transport-spedycja",
-    # "Marketing i PR": "marketing-reklama-pr",
-    # "Media / Sztuka / Rozrywka": "media-sztuka-rozrywka",
-    # "Medycyna / Zdrowie / Uroda / Rekreacja": "medycyna-opieka-zdrowotna",
-    # "Motoryzacja": "motoryzacja",
+    "Internet / e-Commerce": "internet-e-commerce",
+    "Inżynieria": "inzynieria-projektowanie",
+    "Kadra kierownicza": "kadra-zarzadzajaca",
+    "Kontrola jakości": "kontrola-jakosci",
+    "Fryzjerstwo, kosmetyka": "kosmetyka-pielegnacja",
+    "Finanse / Ekonomia / Księgowość": "ksiegowosc-audyt-podatki",
+    "Transport / Spedycja / Logistyka / Kierowca": "logistyka-dystrybucja",
+    "Transport / Spedycja / Logistyka / Kierowca": "transport-spedycja",
+    "Marketing i PR": "marketing-reklama-pr",
+    "Media / Sztuka / Rozrywka": "media-sztuka-rozrywka",
+    "Medycyna / Zdrowie / Uroda / Rekreacja": "medycyna-opieka-zdrowotna",
+    "Motoryzacja": "motoryzacja",
     "Nieruchomości": "nieruchomosci",
     "Ochrona": "ochrona-osob-i-mienia",
     "Organizacje pozarządowe / Wolontariat": "organizacje-pozarzadowe-wolontariat",

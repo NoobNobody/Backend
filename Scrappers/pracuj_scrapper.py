@@ -66,6 +66,7 @@ def scrapp(site_url, category_name, category_path):
             page_url = f"{site_url}/praca/{category_path}?pn={current_page}"
 
         driver.get(page_url)
+        print(f"Aktualna strona: {page_url}")
 
         try:
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'tiles_c1m5bwec')))
@@ -115,11 +116,7 @@ def scrapp(site_url, category_name, category_path):
                         link = lok.a['href']
 
                         location_details = get_location_details(location)
-                        print(location_details)
-
                         province = get_province(location)
-
-                        print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
                         existing_offer = JobOffers.objects.filter(
                             Position=position, 
@@ -128,6 +125,7 @@ def scrapp(site_url, category_name, category_path):
                         ).first()
 
                         if not existing_offer:
+                            print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}, Zarobki: {earnings}")
                             new_offer=JobOffers(
                                 Position=position,
                                 Location=location,
@@ -149,21 +147,20 @@ def scrapp(site_url, category_name, category_path):
                                 Category=Category
                             )
                             new_offer.save()
-                            print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                            print(f"Zapisano w bazie danych nową ofertę pracy!")
+                            print()
                         else:
                             print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                            print()
                             continue
+
                     driver.execute_script("document.querySelectorAll('div.tiles_s1g23iln').forEach(button => button.click());")
                 else:
                     location = location_element.get_text(strip=True) if location_element else None
                     link = offer.find('a', attrs={'data-test': 'link-offer'})['href'] if offer.find('a', attrs={'data-test': 'link-offer'}) else None
                     
                     location_details = get_location_details(location)
-                    print(location_details)
-
                     province = get_province(location)
-
-                    print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
                     existing_offer = JobOffers.objects.filter(
                         Position=position, 
@@ -172,6 +169,7 @@ def scrapp(site_url, category_name, category_path):
                     ).first()
 
                     if not existing_offer:
+                        print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}, Zarobki: {earnings}")
                         new_offer=JobOffers(
                                 Position=position,
                                 Location=location,
@@ -192,9 +190,11 @@ def scrapp(site_url, category_name, category_path):
                                 Category=Category
                             )
                         new_offer.save()
-                        print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                        print(f"Zapisano w bazie danych nową ofertę pracy!")
+                        print()
                     else:
                         print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                        print()
                         continue
 
         next_page_exists = driver.find_elements(By.CSS_SELECTOR, 'button[data-test="bottom-pagination-button-next"]')
@@ -206,23 +206,23 @@ def scrapp(site_url, category_name, category_path):
     driver.quit()
 
 categories = {
-    # "Administracja biurowa": "administracja%20biurowa;cc,5001",
-    # "Badania i rozwój": "badania%20i%20rozwój;cc,5002",
-    # "Bankowość": "bankowość;cc,5003",
-    # "BHP / Ochrona środowiska": "bhp%20ochrona%20środowiska;cc,5004",
-    # "Budownictwo / Remonty / Geodezja": "budownictwo;cc,5005",
-    # "Obsługa klienta i call center": "call%20center;cc,5006",
-    # "Doradztwo / Konsulting": "doradztwo%20konsulting;cc,5037",
-    # "Energetyka": "energetyka;cc,5036",
-    # "Nauka / Edukacja / Szkolenia": "edukacja%20szkolenia;cc,5007",
-    # "Finanse / Ekonomia / Księgowość": "finanse%20ekonomia;cc,5008",
-    # "Franczyza / Własny biznes": "franczyza%20własny%20biznes;cc,5009",
-    # "Hotelarstwo / Gastronomia / Turystyka": "hotelarstwo%20gastronomia%20turystyka;cc,5010",
-    # "Human Resources / Zasoby ludzkie": "human%20resources%20zasoby%20ludzkie;cc,5011",
-    # "Internet / e-Commerce": "internet%20e-commerce%20nowe%20media;cc,5013",
-    # "Inżynieria": "inżynieria;cc,5014",
-    # "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20administracja;cc,5015",
-    # "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20rozwój%20oprogramowania;cc,5016",
+    "Administracja biurowa": "administracja%20biurowa;cc,5001",
+    "Badania i rozwój": "badania%20i%20rozwój;cc,5002",
+    "Bankowość": "bankowość;cc,5003",
+    "BHP / Ochrona środowiska": "bhp%20ochrona%20środowiska;cc,5004",
+    "Budownictwo / Remonty / Geodezja": "budownictwo;cc,5005",
+    "Obsługa klienta i call center": "call%20center;cc,5006",
+    "Doradztwo / Konsulting": "doradztwo%20konsulting;cc,5037",
+    "Energetyka": "energetyka;cc,5036",
+    "Nauka / Edukacja / Szkolenia": "edukacja%20szkolenia;cc,5007",
+    "Finanse / Ekonomia / Księgowość": "finanse%20ekonomia;cc,5008",
+    "Franczyza / Własny biznes": "franczyza%20własny%20biznes;cc,5009",
+    "Hotelarstwo / Gastronomia / Turystyka": "hotelarstwo%20gastronomia%20turystyka;cc,5010",
+    "Human Resources / Zasoby ludzkie": "human%20resources%20zasoby%20ludzkie;cc,5011",
+    "Internet / e-Commerce": "internet%20e-commerce%20nowe%20media;cc,5013",
+    "Inżynieria": "inżynieria;cc,5014",
+    "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20administracja;cc,5015",
+    "IT / telekomunikacja / Rozwój oprogramowania / Administracja": "it%20-%20rozwój%20oprogramowania;cc,5016",
     "Kontrola jakości": "kontrola%20jakości;cc,5034",
     "Łańcuch dostaw": "łańcuch%20dostaw;cc,5017",
     "Marketing i PR": "marketing;cc,5018",

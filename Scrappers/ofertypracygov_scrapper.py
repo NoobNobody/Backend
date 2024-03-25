@@ -42,7 +42,10 @@ def scrapp(site_url):
 
     while True:
         page_url = f"{site_url}/portal/index.cbop#/listaOfert"
+        
         driver.get(page_url)
+        print(f"Aktualna strona: {page_url}")
+
         try:
             WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'oferta-pozycja-kontener-pozycji-min')))
         except TimeoutException:
@@ -65,11 +68,12 @@ def scrapp(site_url):
                 continue  
             position = position_element.get_text(strip=True)
 
-            location = (offer.find('span', class_='miejscePracyCzlonPierwszy').get_text(strip=True) + offer.find('span', class_='miejscePracyCzlonDrugi').get_text(strip=True)) if offer.find('span', class_='miejscePracyCzlonPierwszy') and offer.find('span', class_='miejscePracyCzlonDrugi') else None
+            location = offer.find('span', class_='miejscePracyCzlonPierwszy').get_text(strip=True) if offer.find('span', class_='miejscePracyCzlonPierwszy') else None
+
+            if location:
+                location = location.rstrip(',')
 
             location_details = get_location_details(location)
-            print(location_details)
-
             province = get_province(location)
 
             job_type = offer.find('span', class_='skroconyRodzajZatrudnienia').get_text(strip=True) if offer.find('span', class_='skroconyRodzajZatrudnienia') else None
@@ -81,8 +85,6 @@ def scrapp(site_url):
 
             link = offer.find('a', class_='oferta-pozycja-szczegoly-link')['href'] if offer.find('a', class_='oferta-pozycja-szczegoly-link') else None
             full_link = base_url + link if link else None  
-                 
-            print(f"Pozycja: {position},  Lokacja: {location}, Województwo: {province}, Link: {link}")
 
             existing_offer = JobOffers.objects.filter(
                 Position=position, 
@@ -91,6 +93,7 @@ def scrapp(site_url):
             ).first()
 
             if not existing_offer:
+                print(f"Pozycja: {position},  Lokalizacja: {location}, Województwo: {province}, Data: {publication_date}")
                 new_offer=JobOffers(
                     Position=position,
                     Location=location,
@@ -105,11 +108,13 @@ def scrapp(site_url):
                     Category=Category
                 )
                 new_offer.save()
-                print(f"Zapisano nową ofertę pracy: {position} w {location}.")
+                print(f"Zapisano w bazie danych nową ofertę pracy!")
+                print()
             else:
                 print("Oferta pracy już istnieje w bazie danych. Pomijanie.")
+                print()
 
-        next_page_exists = driver.find_elements(By.CSS_SELECTOR, 'button.oferta-lista-stronicowanie-nastepna-strona.active')
+        next_page_exists = driver.find_elements(By.CSS_SELECTOR, 'button.oferta-lista-stronicowanie-nastepna-strona')
         if not next_page_exists:
             print("Brak kolejnych stron, kończenie scrapowania.")
             break
